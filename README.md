@@ -20,6 +20,8 @@ python svc_health_probe.py http://localhost:8080/health http://api.example.com/s
 - `-H, --header` - Custom headers, e.g. `-H "Authorization: Bearer xyz"`
 - `-j, --json` - Output as JSON for scripting
 - `-v, --verbose` - Show more details
+- `--post` - Post-check command to run after health checks (can be specified multiple times)
+- `--post-timeout` - Timeout for post-check commands in seconds (default: 30)
 
 ### Examples
 
@@ -43,6 +45,27 @@ JSON output for CI/CD:
 python svc_health_probe.py -j http://api.local/health | jq '.healthy'
 ```
 
+With post-checks:
+```bash
+python svc_health_probe.py --post "echo 'Health check complete'" http://localhost:8080/health
+```
+
+Multiple post-checks:
+```bash
+python svc_health_probe.py \
+  --post "curl -s http://localhost:8080/metrics" \
+  --post "echo 'All checks done'" \
+  http://localhost:8080/health
+```
+
+Post-check with custom timeout:
+```bash
+python svc_health_probe.py \
+  --post-timeout 60 \
+  --post "./scripts/validate-deployment.sh" \
+  http://localhost:8080/health
+```
+
 ## Output
 
 Text mode looks like:
@@ -52,11 +75,14 @@ svc-health-probe - 2026-03-03 14:30:00
 [✓] HEALTHY HTTP 200 (12.5ms) - http://localhost:8080/health
 [✗] SERVER_ERROR HTTP 503 (8.2ms) - http://api.local/status
     Error: HTTP 503: Service Unavailable
+
+Post-checks:
+[✓] PASSED (exit 0) (45.2ms) - echo 'Health check complete'
 ------------------------------------------------------------
-1/2 endpoint(s) healthy
+All 1 endpoint(s) healthy, 1/1 post-check(s) passed
 ```
 
-Exit code is 0 if all endpoints are healthy, 1 otherwise.
+Exit code is 0 if all endpoints are healthy and all post-checks pass, 1 otherwise.
 
 ## Install
 
@@ -78,3 +104,5 @@ ln -s $(pwd)/svc_health_probe.py /usr/local/bin/svc-health
 - 4xx and 5xx are considered unhealthy
 - Network errors show as "unreachable"
 - Retries only happen on actual failures, not slow responses
+- Post-checks run after all health endpoint checks complete
+- Post-checks are shell commands, so you can run scripts, curl, echo, etc.
