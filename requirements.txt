@@ -1,0 +1,10 @@
+# No external dependencies required
+# This project uses only Python standard library modules:
+# - argparse
+# - json
+# - sys
+# - time
+# - datetime
+# - urllib.request
+# - urllib.error
+# - typing
